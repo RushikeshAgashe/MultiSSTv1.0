@@ -12,7 +12,7 @@
 #define SYSCLOCKOUT 37500000    //37.5MHz
 #define EPWM1_FREQ  10000       //20kHz
 #define EPWM2_FREQ  10000       //20kHz
-#define EPWM3_FREQ  5000       //10kHz
+#define EPWM3_FREQ  10000       //10kHz
 #define EPWM4_FREQ  20000       //10kHz
 #define EPWM5_FREQ  20000       //10kHz
 #define ISR_FREQ    EPWM1_FREQ
@@ -24,9 +24,13 @@ extern float Vldc;
 extern float Vhdc;
 extern float Vbat;
 extern float Iinv;
+extern float Iinv_rms;
+extern float Iload_rms;
 extern float Vldc_ref;
 extern float Vhdc_ref;
 extern float Iinv_ref;
+extern float Iinv_ref_ramp_rate_per_s;
+extern float Iinv_ref_updated;
 extern float Vldc_err[2], Vhdc_err[2], Iinv_err[3], Vldc_out[2], Vhdc_out[2], Iinv_out[3];
 extern float PR_C1,inv_PR_C1, PR_C2,PR_C3,PR_C4;
 extern float err_ldc, err_ldc_i;

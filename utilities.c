@@ -126,3 +126,10 @@ float update_sogi_filter_beta(float Vgrid){
     return vgrid_beta[0];
 }
 
+float ramp_change(float value, float target, float ramp_rate, float sample_rate){
+    float tolerance = 0.001;
+    if (fabs(target-value) < tolerance) return value;
+    if (target-value < 0) ramp_rate *= -1;
+    value += (ramp_rate*sample_rate);
+    return value;
+}

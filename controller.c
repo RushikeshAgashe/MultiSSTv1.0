@@ -8,6 +8,8 @@
 #include "controller.h"
 #include "variables.h"
 #include "utilities.h"
+#include <sunspec_modbus/modbus/include/port.h>
+#include <sunspec_modbus/include/sunspec_interface.h>
 
 #define DSP1    1
 #define DSP2    2
@@ -83,7 +85,7 @@ interrupt void controller(void){
     Vldc_out[0] = Vldc_out[1] + Kp_DRER*(Vldc_err[0] - Vldc_err[1]) + Ki_DRER*Vldc_err[0]*TS;
     Vldc_err[1] = Vldc_err[0];
     Vldc_out[1] = Vldc_out[0];
-    EPwm3Regs.CMPA.half.CMPA = Vldc_out[0];
+    EPwm3Regs.CMPA.half.CMPA = Vldc_out[0]*3750;
 
     // PI Controller for DAB
     Vhdc = ((float)(AdcData[2]-2047.5)*1000)*(0.00048852);
@@ -111,8 +113,6 @@ interrupt void controller(void){
     Vgrid = ((float)(AdcData[3]-2047.5)*1000)*(0.00048852);
     vgrid_alpha = update_sogi_filter_alpha(Vgrid);
     vgrid_beta  = update_sogi_filter_beta(Vgrid);
-//    vgrid_alpha = sin_theta;
-//    vgrid_beta = cos_theta;
 
     //Park's Transform for d and q component
     vgrid_d     = parks_transform_d(vgrid_alpha, vgrid_beta, cos_theta_pll, sin_theta_pll);
@@ -149,10 +149,11 @@ interrupt void controller(void){
 
 
     // PR Controller for HBridge
+    Iinv_ref_updated = ramp_change(Iinv_ref_updated ,Iinv_ref, Iinv_ref_ramp_rate_per_s, TS);
     Iinv = ((float)(AdcData[4]-2047.5)*1000)*(0.00048852);
     Iinv = (Iinv < -25.0)?-25.0:Iinv;
     Iinv = (Iinv > 25.0)?25.0:Iinv;
-    Iinv_err[0] = Iinv_ref*cos_theta_pll - Iinv;
+    Iinv_err[0] = Iinv_ref_updated*cos_theta_pll - Iinv;
     Iinv_out[0] = inv_PR_C1*(2*Iinv_out[1] - Iinv_out[2] + Iinv_err[0]*PR_C2 - Iinv_err[1]*PR_C3 + Iinv_err[2]*PR_C4);
     Iinv_err[2] = Iinv_err[1];
     Iinv_err[1] = Iinv_err[0];
@@ -163,6 +164,9 @@ interrupt void controller(void){
     EPwm4Regs.CMPA.half.CMPA = (Iinv_out[0] +1.0)*0.5*(SYSCLOCKOUT/ISR_FREQ);
     EPwm5Regs.CMPA.half.CMPA = (Iinv_out[0] +1.0)*0.5*(SYSCLOCKOUT/ISR_FREQ);
 
+    Iinv_rms  = ((float)(AdcData[5]-2047.5)*50)*(0.00048852);
+    Iload_rms = ((float)(AdcData[6]-2047.5)*50)*(0.00048852);
+    suns_model_update_critical();
     // The ADC conversion takes place when counter = CMPA whereas the Interrupt occurs at counter = 0
     // Collecting the ADC results at the end of the ISR implies that we would not spend time waiting for the ISR results.
     #if DSP == DSP1
@@ -171,6 +175,8 @@ interrupt void controller(void){
         AdcData[2] = AdcMirror.ADCRESULT2;
         AdcData[3] = AdcMirror.ADCRESULT3;
         AdcData[4] = AdcMirror.ADCRESULT4;
+        AdcData[5] = AdcMirror.ADCRESULT5;
+        AdcData[6] = AdcMirror.ADCRESULT6;
     #elif DSP == DSP2
         AdcData[0] = AdcMirror.ADCRESULT5;
         AdcData[1] = AdcMirror.ADCRESULT6;

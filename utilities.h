@@ -19,4 +19,5 @@ float inverse_parks_transform_beta(float d, float q, float cos_value_d, float si
 void init_sogi_filter(float Ts, float w, float k);
 float update_sogi_filter_alpha(float Vgrid);                                                                                    // SOGI filter update for alpha component
 float update_sogi_filter_beta(float Vgrid);                                                                                     // SOGI filter update for beta component
+float ramp_change(float value, float target, float ramp_rate, float sample_rate);
 #endif /* UTILITIES_H_ */
